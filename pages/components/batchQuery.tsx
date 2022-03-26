@@ -8,14 +8,24 @@ import CsvDownloader from 'react-csv-downloader'
 const ButtonBox = styled("div")`
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     .example{
       margin-left: 20px;
     }
     .rht{
       margin-right: 20px;
+     
+      button{
+        white-space: nowrap!important;
+      }
     }
-  .query{
-    margin-left: 20px;
+  .querybtn,.query{
+    margin-right: 20px;
+  }
+  @media(max-width: 1000px){
+    .query,.example{
+      margin-top: 20px;
+    }
   }
 `
 const TableBox = styled.div`
@@ -166,7 +176,7 @@ export default function BatchQuery(){
                     </>
                 )}
             </CSVReader>
-            <Button variant="dark" onClick={()=>query_balance()}> Query</Button>
+            <Button variant="dark" onClick={()=>query_balance()} className="querybtn"> Query</Button>
             <div className="query">
                 {
                     !!downloadArr.length &&<CsvDownloader
