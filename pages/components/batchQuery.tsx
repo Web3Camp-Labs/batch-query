@@ -179,7 +179,7 @@ export default function BatchQuery(){
             </div>
 
 
-            <a className="example" href="/batch-query/example.csv">example</a>
+            <a className="example" href="/batch-query/example.csv">example(import)</a>
 
 
         </ButtonBox>
