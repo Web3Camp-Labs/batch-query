@@ -1,16 +1,18 @@
-import {Button, Table, Spinner,Form} from 'react-bootstrap';
+import {Button, Table, Spinner,Form,FloatingLabel,Alert} from 'react-bootstrap';
 import {useEffect, useState,ChangeEvent} from "react";
 import { useCSVReader } from 'react-papaparse';
 import styled from "styled-components";
 import { ethers } from 'ethers';
-import CsvDownloader from 'react-csv-downloader'
+import CsvDownloader from 'react-csv-downloader';
+import Erc20ABI from "../abi/erc20.abi.json";
+import { Contract, Provider } from 'ethers-multicall';
 
 const ButtonBox = styled("div")`
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     .example{
-      margin-left: 20px;
+      margin: 0 20px;
     }
     .rht{
       margin-right: 20px;
@@ -23,8 +25,11 @@ const ButtonBox = styled("div")`
     margin-right: 20px;
   }
   @media(max-width: 1000px){
-    .query,.example{
+    .query,.example,.switchBox{
       margin-top: 20px;
+    }
+    .example{
+      margin-left: 0;
     }
   }
 `
@@ -63,6 +68,12 @@ const TableBox = styled.div`
     }
   }
 `
+
+const FloatBox = styled(FloatingLabel)`
+  width: 100%;
+  margin-top: 20px;
+`
+
 interface listObj {
     address:string
     index:number
@@ -79,6 +90,10 @@ export default function BatchQuery(){
     const [checkArr,setCheckArr] = useState<listObj[]>([])
     const [downloadArr,setDownloadArr] = useState<listObj[]>([])
     const [show,setShow] = useState<boolean>(false);
+    const [showType,setShowType] = useState<boolean>(false);
+    const [showErr,setShowErr] = useState<boolean>(false);
+    const [TokenAddress,setTokenAddress] = useState<string>('');
+    const [Tips,setTips] = useState<string>('');
 
     useEffect(()=>{
         const provider = new ethers.providers.Web3Provider((window as any).ethereum)
@@ -99,8 +114,24 @@ export default function BatchQuery(){
         setDownloadArr(arr)
     },[checkArr])
 
-    const query_balance = async () => {
 
+    const query_balance = () => {
+        if(showType && TokenAddress ===""){
+            setShowErr(true)
+            setTips('ERC20 address is required');
+            setTimeout(()=>{
+                setShowErr(false)
+            },2000)
+            return;
+        }
+        if(showType && !ethers.utils.isAddress(TokenAddress)){
+            setShowErr(true)
+            setTips('ERC20 address is not correct');
+            setTimeout(()=>{
+                setShowErr(false)
+            },2000)
+            return;
+        }
         let arr:listObj[];
         let loadingArr: boolean[];
         if(checkArr.length){
@@ -111,17 +142,58 @@ export default function BatchQuery(){
             })
         }else{
             arr = [...list];
-            loadingArr = [...Array(list.length)].fill(true);;
+            loadingArr = [...Array(list.length)].fill(true);
         }
         setLoading(loadingArr)
+        if(showType){
+            queryERC20(arr).then((data)=>{
+                console.log("=======",data)
+            })
+        }else{
+            queryNative(arr).then((data)=>{
+                console.log("=======",data)
+            });
+        }
+
+    };
+    const queryERC20 = async (arr:listObj[]) =>{
+        const contract = new Contract(TokenAddress, Erc20ABI);
+        const FormatAddress:any[] = [];
+        arr.map((item,index)=>{
+            FormatAddress.push(
+                contract.balanceOf(item.address)
+            )
+        })
+        const ethcallProvider = new Provider(web3);
+        await ethcallProvider.init();
+        const amountList = await ethcallProvider.all(FormatAddress)
+            arr.map((item,index)=>{
+                let amount = amountList[index].toString();
+                item.amount = ethers.utils.formatEther(amount);
+            });
+        const loadingArr = [...Array(list.length)].fill(false);
+        setLoading(loadingArr)
+        setList(arr)
+    }
+
+    const queryNative = async (arr:listObj[]) =>{
         for await (let item of arr){
-            const objArr = [...list];
+            const objArr = [...checkArr];
             let amount = await web3?.getBalance(item.address)
-            const obj = arr.filter(obj=>obj.address ===item.address);
-            obj[0].amount = ethers.utils.formatEther(amount.toString());
+            const objItem = arr.filter(obj=>obj.address ===item.address);
+            objItem[0].amount = ethers.utils.formatEther(amount.toString());
             setList(objArr)
         }
-    };
+    }
+
+    const handleType = () =>{
+        setShowType(!showType)
+        setCheckArr([])
+        setDownloadArr([])
+        setLoading([])
+        setList([])
+        setShowErr(false);
+    }
 
     const UniqueArr = (objArr:listObj) =>{
         let obj:any ={};
@@ -135,6 +207,11 @@ export default function BatchQuery(){
         const index = Number(eventObj.value);
         list[index].checked = true;
         setShow(!show)
+    }
+
+    const handleInput= (e:ChangeEvent) => {
+        const eventObj = e.target as HTMLInputElement;
+        setTokenAddress(eventObj.value)
     }
 
     return <div>
@@ -181,7 +258,7 @@ export default function BatchQuery(){
                 {
                     !!downloadArr.length &&<CsvDownloader
                         datas={downloadArr as any}
-                        filename={`myWallets_${downloadArr[0]?.address}`}
+                        filename={`myWallets_${showType?'ERC20':'native'}_${downloadArr[0]?.address}`}
                         extension=".csv"> <Button variant="dark">  Download</Button>
                     </CsvDownloader>
                 }
@@ -190,9 +267,37 @@ export default function BatchQuery(){
 
 
             <a className="example" href="/batch-query/example.csv">example(import)</a>
-
+            <div className="switchBox">
+                <Form.Check
+                    type="switch"
+                    id="custom-switch"
+                    label="Native / ERC20"
+                    checked={showType}
+                    onChange={()=>handleType()}
+                />
+            </div>
 
         </ButtonBox>
+
+        {
+            showType &&<div>
+                <FloatBox
+                    controlId="floatingInput"
+                    label="Token Address"
+                    className="mb-3"
+                >
+                    <Form.Control type="text" placeholder="Token Address" onChange={handleInput}/>
+                </FloatBox>
+            </div>
+        }
+        {
+            showErr &&<Alert  variant='danger'>
+                {Tips}
+            </Alert>
+        }
+
+
+
         <TableBox>
             <Table striped borderless hover className="tableStyle">
                 <thead>

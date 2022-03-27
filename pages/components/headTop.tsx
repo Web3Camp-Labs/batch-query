@@ -10,7 +10,7 @@ export default function HeaderTop() {
     return <div className="header">
         <Container>
             <Row>
-                <Col className="headerTxt" md={8} xs={12}>Native Token Batch Query</Col>
+                <Col className="headerTxt" md={8} xs={12}>Native/ERC20 Token Batch Query</Col>
                 <Col className="headetRht" md={4} xs={12}>&copy; Web3 Camp</Col>
             </Row>
         </Container>
