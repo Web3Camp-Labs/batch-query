@@ -4,9 +4,15 @@ import {Container, Row, Col, Card} from 'react-bootstrap';
 import styled from "styled-components";
 import HeaderTop from "./components/headTop";
 import BatchQuery from "./components/batchQuery";
-
+import FooterBox from "./components/footerBox";
 const MainBox = styled.div`
     display: flex;
+  flex-grow: 1;
+`
+const MainContent = styled.main`
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 `
 
 const BgBox = styled(Container)`
@@ -29,7 +35,7 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main >
+      <MainContent >
           <HeaderTop />
           <MainBox>
               <BgBox>
@@ -42,7 +48,8 @@ const Home: NextPage = () => {
                   </Row>
               </BgBox>
           </MainBox>
-      </main>
+          <FooterBox />
+      </MainContent>
     </>
   )
 }
