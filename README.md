@@ -1,6 +1,6 @@
-# Native-token-batch-query
+# Token-batch-query
 
-Batch query native token amount ,import/export csv file
+Batch query native/ERC20 token amount ,import/export csv file
 
 ## Getting Started
 
