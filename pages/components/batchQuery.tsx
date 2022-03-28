@@ -74,6 +74,10 @@ const FloatBox = styled(FloatingLabel)`
   margin-top: 20px;
 `
 
+const AlertBox = styled(Alert)`
+  margin-top: 20px;
+`
+
 interface listObj {
     address:string
     index:number
@@ -96,8 +100,10 @@ export default function BatchQuery(){
     const [Tips,setTips] = useState<string>('');
 
     useEffect(()=>{
-        const provider = new ethers.providers.Web3Provider((window as any).ethereum)
-        setWeb3(provider)
+        if((window as any)?.ethereum){
+            const provider = new ethers.providers.Web3Provider((window as any).ethereum)
+            setWeb3(provider)
+        }
     },[])
 
     useEffect(()=>{
@@ -116,6 +122,17 @@ export default function BatchQuery(){
 
 
     const query_balance = () => {
+        if(!(window as any)?.ethereum){
+            setTips('Please install metamask');
+            setShowErr(true)
+        }
+        if(!list.length){
+            setTips('Please Import CSV ');
+            setShowErr(true)
+            setTimeout(()=>{
+                setShowErr(false)
+            },2000)
+        }
         if(showType && TokenAddress ===""){
             setShowErr(true)
             setTips('ERC20 address is required');
@@ -291,9 +308,9 @@ export default function BatchQuery(){
             </div>
         }
         {
-            showErr &&<Alert  variant='danger'>
+            showErr &&<AlertBox  variant='danger'>
                 {Tips}
-            </Alert>
+            </AlertBox>
         }
 
 

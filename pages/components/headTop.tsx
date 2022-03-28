@@ -3,9 +3,12 @@ import { Container, Row, Col } from 'react-bootstrap';
 
 export default function HeaderTop() {
     useEffect(()=>{
-        (window as any).ethereum.on('chainChanged', () => {
-            window.location.reload()
-        });
+        if((window as any).ethereum){
+            (window as any).ethereum.on('chainChanged', () => {
+                window.location.reload()
+            });
+        }
+
     },[])
     return <div className="header">
         <Container>
