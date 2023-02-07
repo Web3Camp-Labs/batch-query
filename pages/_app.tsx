@@ -5,7 +5,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 function MyApp({ Component, pageProps }: AppProps) {
   return <>
     <Component {...pageProps} />
-    <link rel="stylesheet" href="https://web3camp.us/globals.css"/>
+    <link rel="stylesheet" href="./globals.css"/>
   </>
 }
 
