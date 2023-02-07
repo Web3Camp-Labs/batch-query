@@ -98,7 +98,7 @@ const Home: NextPage = () => {
                           </TopLine>
                       </Col>
                       <Col md={12} xs={12}>
-                          <CardBox body>
+                          <CardBox>
                                 <BatchQuery />
                           </CardBox>
                       </Col>
