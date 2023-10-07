@@ -195,7 +195,7 @@ export default function BatchQuery(){
 
     const queryNative = async (arr:listObj[]) =>{
         for await (let item of arr){
-            const objArr = [...checkArr];
+            const objArr = [...arr];
             let amount = await web3?.getBalance(item.address)
             const objItem = arr.filter(obj=>obj.address ===item.address);
             objItem[0].amount = ethers.utils.formatEther(amount.toString());
