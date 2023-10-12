@@ -1,5 +1,8 @@
 import styled from "styled-components";
 import {Container} from 'react-bootstrap';
+import GithubImg from "../images/github.png";
+import TwitterImg from "../images/Twitter.png";
+
 const Footer = styled.div`
   height: 80px;
   margin-top: 60px;
@@ -34,10 +37,10 @@ export default function footerBox(){
 
                 <div>
                     <a href="https://github.com/Web3Camp-Labs/batch-query" target="_blank" rel="noreferrer">
-                        <img src="./github.png" alt=""/>
+                        <img src={GithubImg} alt=""/>
                     </a>
                     <a href="https://twitter.com/Web3Camp" target="_blank" rel="noreferrer">
-                        <img src="./Twitter.png" alt=""/>
+                        <img src={TwitterImg} alt=""/>
                     </a>
                 </div>
             </div>

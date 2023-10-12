@@ -1,11 +1,13 @@
 import {Button, Table, Spinner,Form,FloatingLabel,Alert} from 'react-bootstrap';
-import {useEffect, useState,ChangeEvent} from "react";
+import {useEffect, useState} from "react";
 import { useCSVReader } from 'react-papaparse';
 import styled from "styled-components";
 import { ethers } from 'ethers';
 import CsvDownloader from 'react-csv-downloader';
 import Erc20ABI from "../abi/erc20.abi.json";
 import { Contract, Provider } from 'ethers-multicall';
+import {CheckLg} from "react-bootstrap-icons"
+
 
 const ButtonBox = styled("div")`
     display: flex;
@@ -78,30 +80,24 @@ const AlertBox = styled(Alert)`
   margin-top: 20px;
 `
 
-interface listObj {
-    address:string
-    index:number
-    amount?:string
-    checked?:boolean
-}
-
 export default function BatchQuery(){
 
     const { CSVReader } = useCSVReader();
-    const [list,setList] = useState<listObj[]>([]);
-    const [web3,setWeb3] = useState<any>();
-    const [loading,setLoading] = useState<boolean[]>([])
-    const [checkArr,setCheckArr] = useState<listObj[]>([])
-    const [downloadArr,setDownloadArr] = useState<listObj[]>([])
-    const [show,setShow] = useState<boolean>(false);
-    const [showType,setShowType] = useState<boolean>(false);
-    const [showErr,setShowErr] = useState<boolean>(false);
-    const [TokenAddress,setTokenAddress] = useState<string>('');
-    const [Tips,setTips] = useState<string>('');
+    const [list,setList] = useState([]);
+    const [web3,setWeb3] = useState();
+    const [loading,setLoading] = useState([])
+    const [checkArr,setCheckArr] = useState([])
+    const [downloadArr,setDownloadArr] = useState([])
+    const [show,setShow] = useState(false);
+    const [showType,setShowType] = useState(false);
+    const [showErr,setShowErr] = useState(false);
+    const [TokenAddress,setTokenAddress] = useState('');
+    const [rvAddress,setRVAddress] = useState('');
+    const [Tips,setTips] = useState('');
 
     useEffect(()=>{
-        if((window as any)?.ethereum){
-            const provider = new ethers.providers.Web3Provider((window as any).ethereum)
+        if(window.ethereum) {
+            const provider = new ethers.providers.Web3Provider(window.ethereum)
             setWeb3(provider)
         }
     },[])
@@ -114,15 +110,15 @@ export default function BatchQuery(){
     useEffect(()=>{
         if(!checkArr.length)return;
        const arr = JSON.parse(JSON.stringify(checkArr));
-        arr.map((item:listObj)=>{
+        arr.map((item)=>{
             delete item.checked
         })
         setDownloadArr(arr)
     },[checkArr])
 
 
-    const query_balance = () => {
-        if(!(window as any)?.ethereum){
+    const query_balance = async() => {
+        if(!window.ethereum){
             setTips('Please install metamask');
             setShowErr(true)
         }
@@ -149,13 +145,13 @@ export default function BatchQuery(){
             },2000)
             return;
         }
-        let arr:listObj[];
-        let loadingArr: boolean[];
+        let arr;
+        let loadingArr;
         if(checkArr.length){
             arr = [...checkArr];
             loadingArr = [...Array(list.length)].fill(true);
             list.map((item,index)=>{
-                loadingArr[index] = item.checked as boolean;
+                loadingArr[index] = item.checked;
             })
         }else{
             arr = [...list];
@@ -163,19 +159,19 @@ export default function BatchQuery(){
         }
         setLoading(loadingArr)
         if(showType){
-            queryERC20(arr).then((data)=>{
+            await queryERC20(arr).then((data)=>{
                 console.log("=======",data)
             })
         }else{
-            queryNative(arr).then((data)=>{
+            await queryNative(arr).then((data)=>{
                 console.log("=======",data)
             });
         }
 
     };
-    const queryERC20 = async (arr:listObj[]) =>{
+    const queryERC20 = async (arr) =>{
         const contract = new Contract(TokenAddress, Erc20ABI);
-        const FormatAddress:any[] = [];
+        const FormatAddress = [];
         arr.map((item,index)=>{
             FormatAddress.push(
                 contract.balanceOf(item.address)
@@ -193,7 +189,7 @@ export default function BatchQuery(){
         setList(arr)
     }
 
-    const queryNative = async (arr:listObj[]) =>{
+    const queryNative = async (arr) =>{
         for await (let item of arr){
             const objArr = [...arr];
             let amount = await web3?.getBalance(item.address)
@@ -212,41 +208,119 @@ export default function BatchQuery(){
         setShowErr(false);
     }
 
-    const UniqueArr = (objArr:listObj) =>{
-        let obj:any ={};
-        return (objArr as any).reduce((cur:listObj,next:listObj) => {
-            obj[next.address] ? "" : obj[next.address] = true && (cur as any).push(next);
+    const UniqueArr = (objArr) =>{
+        let obj ={};
+        return objArr.reduce((cur,next) => {
+            // obj[next.address] ? "" : obj[next.address] = true && cur.push(next);
+            if(!obj[next.address]){
+                obj[next.address] = true;
+                cur.push(next)
+            }
             return cur;
         },[])
     }
-    const handleChange = (e:ChangeEvent) =>{
-        const eventObj = e.target as HTMLInputElement;
+    const handleChange = (e) =>{
+        const eventObj = e.target;
         const index = Number(eventObj.value);
         list[index].checked = true;
         setShow(!show)
     }
 
-    const handleInput= (e:ChangeEvent) => {
-        const eventObj = e.target as HTMLInputElement;
+    const handleInput= (e) => {
+        const eventObj = e.target;
         setTokenAddress(eventObj.value)
     }
+    const handleInputReceiver= (e) => {
+        const eventObj = e.target;
+        setRVAddress(eventObj.value)
+    }
+
+    const tranferArr = async () =>{
+        let newArr =[];
+        setShowErr(false);
+        let isAddr = ethers.utils.isAddress(rvAddress);
+        if(!isAddr) {
+            setTips("Receiver address is error")
+            setShowErr(true);
+            return;
+        }
+        await query_balance()
+
+        console.log(list)
+
+         newArr = list.filter((item,index)=> {
+            if(item.privateKey && Number(item.amount)){
+                item.pos = index;
+            }
+            return item.privateKey && Number(item.amount)
+        })
+        if(!newArr.length){
+            setTips("There is no balance in the account")
+            setShowErr(true);
+            return;
+        }
+
+
+        await window.ethereum.enable();
+        console.log(newArr)
+        for await (let item of newArr){
+            const arr = [...list];
+            const wallet = new ethers.Wallet(item.privateKey, web3);
+            const amountAft = ethers.utils.parseEther(item.amount);
+
+            const gasPrice = await web3.getGasPrice();
+            const gasLimit = "210000";
+
+            // 计算燃气费用
+            const gasFee = gasPrice.mul(gasLimit);
+            console.log(gasPrice,gasPrice.toString(),gasFee)
+
+            const amountToSend= amountAft.sub(gasFee);
+
+
+            const transaction = {
+                to: rvAddress,
+                value: amountToSend,
+            };
+
+            try{
+                const signedTransaction = await wallet.sendTransaction(transaction);
+                const rt = await signedTransaction.wait();
+                arr[item.pos].status = "Success"
+                setList(arr)
+                console.log('Transaction hash:', signedTransaction.hash);
+            }catch (e){
+                arr[item.pos].status = "Failed"
+                console.error(e)
+                setList(arr)
+            }
+
+        }
+
+
+
+    }
+
+
+
 
     return <div>
         <ButtonBox>
             <CSVReader
-                onUploadAccepted={(results: any) => {
+                onUploadAccepted={(results) => {
                     // results.data.shift()
 
-                    const arr = results.data.map((item:any)=>{
+                    const arr = results.data.map((item)=>{
                         if(!ethers.utils.isAddress(item[0])) return null;
                         return {
                             address:item[0],
+                            privateKey:item[1],
                             amount:null,
                             checked:false
                         }
                     })
 
-                    const ArrAft = arr.filter((item:any) => item != null);
+                    const ArrAft = arr.filter((item) => item != null);
                     const ArrUni = UniqueArr(ArrAft);
                     const e = [...Array(ArrUni.length)].fill(false)
                     setLoading(e)
@@ -256,7 +330,7 @@ export default function BatchQuery(){
             >
                 {({
                       getRootProps,
-                  }: any) => (
+                  }) => (
                     <>
                         <div
                             {...getRootProps()}
@@ -271,10 +345,12 @@ export default function BatchQuery(){
                 )}
             </CSVReader>
             <Button variant="dark" onClick={()=>query_balance()} className="querybtn"> Query</Button>
+            <Button variant="dark" onClick={()=>tranferArr()} className="querybtn"> Transfer</Button>
+
             <div className="query">
                 {
                     !!downloadArr.length &&<CsvDownloader
-                        datas={downloadArr as any}
+                        datas={downloadArr}
                         filename={`myWallets_${showType?'ERC20':'native'}_${downloadArr[0]?.address}`}
                         extension=".csv"> <Button variant="dark">  Download</Button>
                     </CsvDownloader>
@@ -312,8 +388,15 @@ export default function BatchQuery(){
                 {Tips}
             </AlertBox>
         }
-
-
+        <div>
+            <FloatBox
+                controlId="floatingInput"
+                label="Receiver Address"
+                className="mb-3"
+            >
+                <Form.Control type="text" placeholder="Receiver Address" onChange={handleInputReceiver}/>
+            </FloatBox>
+        </div>
 
         <TableBox>
             <Table striped borderless hover className="tableStyle">
@@ -323,6 +406,7 @@ export default function BatchQuery(){
                         <th>index</th>
                         <th>Address</th>
                         <th>Amount</th>
+                        <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -349,6 +433,9 @@ export default function BatchQuery(){
                                     item.amount ==null && loading[index] && <Spinner animation="border" variant="dark" />
                                 }
                                 {item.amount}
+                            </td>
+                            <td>
+                                {item.pos != null  ? (item.status ? item.status:<Spinner animation="border" variant="dark" />) : "" }
                             </td>
                         </tr>
                     )
