@@ -6,7 +6,6 @@ import { ethers } from 'ethers';
 import CsvDownloader from 'react-csv-downloader';
 import Erc20ABI from "../abi/erc20.abi.json";
 import { Contract, Provider } from 'ethers-multicall';
-import {CheckLg} from "react-bootstrap-icons"
 
 
 const ButtonBox = styled("div")`
@@ -288,7 +287,7 @@ export default function BatchQuery(){
                 const rt = await signedTransaction.wait();
                 arr[item.pos].status = "Success"
                 setList(arr)
-                console.log('Transaction hash:', signedTransaction.hash);
+                console.log('Transaction hash:', rt);
             }catch (e){
                 arr[item.pos].status = "Failed"
                 console.error(e)

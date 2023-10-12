@@ -53,11 +53,11 @@ const Lft = styled.div`
 const TopLine = styled.div`
     margin-bottom: 20px;
 `
-
-const ButtonBox = styled.div`
-    padding: 20px 0;
-    text-align: right;
-`
+//
+// const ButtonBox = styled.div`
+//     padding: 20px 0;
+//     text-align: right;
+// `
 const TitleBox = styled.div`
   font-family: Helvetica;
   font-size: 16px;
