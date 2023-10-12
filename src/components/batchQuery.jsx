@@ -4,7 +4,8 @@ import { useCSVReader } from 'react-papaparse';
 import styled from "styled-components";
 import { ethers } from 'ethers';
 import CsvDownloader from 'react-csv-downloader';
-import Erc20ABI from "../abi/erc20.abi.json";
+// import Erc20ABI from "../abi/erc20.abi.json";
+import Erc20ABI from "../abi/MockErc20.json";
 import { Contract, Provider } from 'ethers-multicall';
 
 
@@ -234,7 +235,17 @@ export default function BatchQuery(){
         setRVAddress(eventObj.value)
     }
 
-    const tranferArr = async () =>{
+    const tranferAll = async() =>{
+        if(showType && TokenAddress ===""){
+            setShowErr(true)
+            setTips('ERC20 address is required');
+            setTimeout(()=>{
+                setShowErr(false)
+            },2000)
+            return;
+        }
+
+
         let newArr =[];
         setShowErr(false);
         let isAddr = ethers.utils.isAddress(rvAddress);
@@ -247,7 +258,7 @@ export default function BatchQuery(){
 
         console.log(list)
 
-         newArr = list.filter((item,index)=> {
+        newArr = list.filter((item,index)=> {
             if(item.privateKey && Number(item.amount)){
                 item.pos = index;
             }
@@ -259,6 +270,49 @@ export default function BatchQuery(){
             return;
         }
 
+        if(!showType){
+            transferArr(newArr)
+        }else if(showType && TokenAddress){
+            transferERC20(newArr)
+        }
+    }
+
+
+
+    const transferERC20 = async(newArr) =>{
+
+        await window.ethereum.enable();
+        console.log(newArr)
+
+
+
+
+        for await (let item of newArr){
+            const arr = [...list];
+            const wallet = new ethers.Wallet(item.privateKey, web3);
+            const amountAft = ethers.utils.parseEther(item.amount);
+            console.log(amountAft.toString())
+
+            const contract = new ethers.Contract(TokenAddress, Erc20ABI,web3);
+
+            const amount = ethers.utils.parseUnits('1');
+            try{
+                const transferTx = await contract.connect(wallet).transfer(rvAddress, amount);
+                const rt = await transferTx.wait();
+                console.log('Transaction sent:', transferTx,rt);
+                    arr[item.pos].status = "Success"
+                    setList(arr)
+            }catch (e) {
+                    arr[item.pos].status = "Failed"
+                    console.error(e)
+                    setList(arr)
+            }
+
+        }
+
+    }
+
+    const transferArr = async (newArr) =>{
 
         await window.ethereum.enable();
         console.log(newArr)
@@ -270,7 +324,6 @@ export default function BatchQuery(){
             const gasPrice = await web3.getGasPrice();
             const gasLimit = "210000";
 
-            // 计算燃气费用
             const gasFee = gasPrice.mul(gasLimit);
             console.log(gasPrice,gasPrice.toString(),gasFee)
 
@@ -293,10 +346,7 @@ export default function BatchQuery(){
                 console.error(e)
                 setList(arr)
             }
-
         }
-
-
 
     }
 
@@ -344,7 +394,7 @@ export default function BatchQuery(){
                 )}
             </CSVReader>
             <Button variant="dark" onClick={()=>query_balance()} className="querybtn"> Query</Button>
-            <Button variant="dark" onClick={()=>tranferArr()} className="querybtn"> Transfer</Button>
+            <Button variant="dark" onClick={()=>tranferAll()} className="querybtn"> Transfer</Button>
 
             <div className="query">
                 {
