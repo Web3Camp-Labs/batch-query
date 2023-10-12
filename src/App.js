@@ -81,8 +81,8 @@ function App() {
                       <Lft>
                         <div className="imgBox"><img src={QueryLogo} alt=""/></div>
                         <TitleBox>
-                          <div className="tit">Batch Query</div>
-                          <div>Batch query native/ERC20 token amount ,import/export csv file.</div>
+                          <div className="tit">Batch Query/Transfer</div>
+                          <div>Batch query/transfer native/ERC20 token amount ,import/export csv file.</div>
                         </TitleBox>
                       </Lft>
                     </Col>
